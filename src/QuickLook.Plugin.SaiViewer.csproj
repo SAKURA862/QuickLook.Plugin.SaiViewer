@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Library</OutputType>
+    <AssemblyName>QuickLook.Plugin.SaiViewer</AssemblyName>
+    <RootNamespace>QuickLook.Plugin.SaiViewer</RootNamespace>
+    <Version>1.2.0</Version>
+    <Product>QuickLook SaiViewer</Product>
+    <Description>QuickLook viewer for PaintTool SAI Ver.2 (.sai2) canvases</Description>
+    <Copyright>Copyright (c) 2026 SaiViewer contributors</Copyright>
+    <RepositoryUrl>https://github.com/SAKURA862/QuickLook.Plugin.SaiViewer</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <!-- QuickLook.Common 4.5.0 is built for .NET Framework 4.6.2, so this plugin targets net472. -->
+  <ItemGroup>
+    <PackageReference Include="QuickLook.Common" Version="4.5.0" />
+    <!-- Lets the project build with only the .NET SDK / cmdline, without Visual Studio reference assemblies. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Dev-only harnesses live outside the plugin and are not part of the shipped assembly. -->
+  <ItemGroup>
+    <Compile Remove="tools\**" />
+    <None Remove="tools\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="QuickLook.Plugin.Metadata.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

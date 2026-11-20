@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Packed plugin
+*.qlplugin
+out/
+
+# Dev harness scratch
+scratch/
+*.log
+
+# OS noise
+Thumbs.db
+.DS_Store
