@@ -13,14 +13,23 @@ namespace QuickLook.Plugin.SaiViewer
     /// </summary>
     public class Plugin : IViewer
     {
-        private const double MaxLongSide = 900.0;
+        // 面板尺寸跟着屏幕走：大画布铺满工作区的 92%（和 QuickLook 预览 PNG 的感觉一致），
+        // 小画布按原尺寸显示，最多放大 2.5 倍。
+        private const double WorkAreaFraction = 0.92;
         private const double MaxUpscale = 2.5;
         private const double FooterHeight = 30.0;
-        private const int DecodeLongSide = 1600;
+        // ThumbnailView 里图片容器的 Margin：左右 16，上 16 下 8
+        private const double ChromeWidth = 32.0;
+        private const double ChromeHeight = 24.0;
+        // 解码分辨率 = 面板显示尺寸的 1.3 倍（留出标题栏/缩放余量），并限制在合理区间
+        private const double DecodeOversample = 1.3;
+        private const int DecodeMinLongSide = 768;
+        private const int DecodeMaxLongSide = 2048;
 
         private string _path;
         private Sai2Info _info;
         private string _error;
+        private int _decodeLongSide = DecodeMinLongSide;
 
         public int Priority => 0;
 
@@ -59,7 +68,7 @@ namespace QuickLook.Plugin.SaiViewer
             try
             {
                 _info = Sai2Thumbnail.ReadInfo(path);
-                context.PreferredSize = PickSize(_info);
+                context.PreferredSize = PickSize(_info, out _decodeLongSide);
 
                 if (!_info.HasIntg && !_info.HasJssfThumb)
                     _error = "文件里没有可用的预览数据。";
@@ -87,7 +96,7 @@ namespace QuickLook.Plugin.SaiViewer
                 if (_info.HasIntg)
                 {
                     int w, h;
-                    var pixels = Sai2Thumbnail.ExtractIntgScaled(path, _info, DecodeLongSide, out w, out h);
+                    var pixels = Sai2Thumbnail.ExtractIntgScaled(path, _info, _decodeLongSide, out w, out h);
                     if (pixels != null && w > 0 && h > 0)
                     {
                         image = BitmapSource.Create(w, h, 96, 96, PixelFormats.Bgra32, null, pixels, w * 4);
@@ -137,8 +146,10 @@ namespace QuickLook.Plugin.SaiViewer
             _error = null;
         }
 
-        private static Size PickSize(Sai2Info info)
+        private static Size PickSize(Sai2Info info, out int decodeLongSide)
         {
+            decodeLongSide = DecodeMinLongSide;
+
             double w = info.CanvasWidth;
             double h = info.CanvasHeight;
             if (w <= 0 || h <= 0)
@@ -147,25 +158,25 @@ namespace QuickLook.Plugin.SaiViewer
                 h = info.ThumbHeight > 0 ? info.ThumbHeight : 512;
             }
 
-            double longer = Math.Max(w, h);
-            double scale = Math.Min(MaxLongSide / longer, MaxUpscale);
-            if (scale <= 0 || double.IsNaN(scale) || double.IsInfinity(scale)) scale = 1.0;
-
-            double panelWidth = Math.Round(w * scale);
-            double panelHeight = Math.Round(h * scale) + FooterHeight;
-
-            // 别比屏幕工作区还大（留一点边距给任务栏和窗口装饰）
+            // 图片区域最多占工作区的 92%（减掉窗口装饰的余量），小画布按原尺寸或最多 2.5 倍放大
             var work = SystemParameters.WorkArea;
-            var maxWidth = Math.Max(240.0, work.Width * 0.92);
-            var maxHeight = Math.Max(240.0, work.Height * 0.92);
-            if (panelWidth > maxWidth || panelHeight > maxHeight)
-            {
-                var fit = Math.Min(maxWidth / panelWidth, maxHeight / panelHeight);
-                panelWidth = Math.Round(panelWidth * fit);
-                panelHeight = Math.Round(panelHeight * fit);
-            }
+            double maxImageWidth = Math.Max(240.0, work.Width * WorkAreaFraction - ChromeWidth - 24.0);
+            double maxImageHeight = Math.Max(180.0, work.Height * WorkAreaFraction - ChromeHeight - FooterHeight - 24.0);
 
-            return new Size(panelWidth, panelHeight);
+            double scale = Math.Min(maxImageWidth / w, maxImageHeight / h);
+            if (double.IsNaN(scale) || double.IsInfinity(scale) || scale <= 0) scale = 1.0;
+            scale = Math.Min(scale, MaxUpscale);
+
+            double imageWidth = Math.Round(w * scale);
+            double imageHeight = Math.Round(h * scale);
+
+            // 解码按显示尺寸的 1.3 倍准备，留一点分辨率余量又不过分开销
+            double wanted = Math.Max(imageWidth, imageHeight) * DecodeOversample;
+            if (wanted < DecodeMinLongSide) wanted = DecodeMinLongSide;
+            if (wanted > DecodeMaxLongSide) wanted = DecodeMaxLongSide;
+            decodeLongSide = (int)Math.Ceiling(wanted);
+
+            return new Size(imageWidth + ChromeWidth, imageHeight + ChromeHeight + FooterHeight);
         }
 
         private static string BuildCaption(Sai2Info info, string kind)

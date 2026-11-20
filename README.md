@@ -63,14 +63,16 @@ into the plugin folder above.
   the plugin never calls a write, rename or delete API, so a preview can never
   alter or damage a canvas — and it can preview a file that SAI currently has
   open.
-- Canvas long side up to 1600 px is decoded at 1:1; larger canvases are boxed
-  down by an integer factor while decoding (invisible at preview size, keeps
-  memory sane).
+- The decode resolution follows the panel size (≈1.3× the displayed long side,
+  clamped to 768–2048 px); larger canvases are boxed down by an integer factor
+  while decoding, which keeps memory sane without visible loss at preview size.
 - Decoding is parallelised per 256×256 tile. Measured on an 8-core machine:
   4096×4096 ≈ 0.37 s, 2480×4214 ≈ 0.11 s, average over 291 real files ≈ 0.15 s.
 - Transparent canvases are drawn over a checkerboard.
-- The panel opens at 900 px on the long side (clamped to 92 % of the screen's
-  work area) and can be resized.
+- The panel opens at up to 92 % of the screen's work area — a 4096×4096 canvas
+  gets roughly the same sized window as previewing a 4096×4096 PNG — while small
+  canvases open at their own size (at most 2.5× upscaled). The window can be
+  resized.
 
 ## Limitations
 
@@ -124,6 +126,8 @@ Format knowledge comes from [Wunkolo/libsai](https://github.com/Wunkolo/libsai) 
 - 只支持 `.sai2`。`.sai`（Ver.1）是另一套「4096 字节块 + 静态密钥异或混淆」的容器，
   解开它等于破解混淆层，本项目有意不做（详见下方 Legal）。
 - 大画布首次预览约 0.1–0.4 秒（按 256×256 瓦片并行解码）。
+- 窗口默认开到屏幕工作区的 92%（4096×4096 的画布和直接预览同尺寸 PNG 差不多大），
+  小画布按原尺寸显示、最多放大 2.5 倍，窗口可自由缩放。
 - 与 SYSTEMAX Software Development 无任何关联，未使用其代码；格式知识来自 MIT 授权的
   libsai 与本机实测。
 
