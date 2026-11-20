@@ -22,6 +22,10 @@ the window is enlarged, and falls back to `thum` when a file has no `intg` block
 
 ## Install
 
+**Download:**
+[QuickLook.Plugin.SaiViewer.qlplugin](https://github.com/SAKURA862/QuickLook.Plugin.SaiViewer/releases/latest/download/QuickLook.Plugin.SaiViewer.qlplugin)
+([all releases](../../releases))
+
 **Option 1 — `.qlplugin`**
 
 Grab `QuickLook.Plugin.SaiViewer.qlplugin` from [Releases](../../releases), select
